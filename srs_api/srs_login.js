@@ -40,7 +40,7 @@ async function getLogin(cookieJar) {
 
 async function postLogin(cookieJar, url, data) {
     const result = {};
-
+    
     const options = {
         method: 'POST',
         url: url,
@@ -63,7 +63,7 @@ async function postLogin(cookieJar, url, data) {
     await rp(options)
         .then($ => {
             console.log($('title').html());
-            result.ref = $('strong').text();
+            result.ref = $('strong').text().slice(0, 4);
         })
         .catch(err => {
             console.log(err);
@@ -103,10 +103,11 @@ async function verifyEmail(cookieJar, data) {
 
 function getPHPSESSID(cookieJar) {
     const regex = /PHPSESSID=([A-Za-z0-9]+);/gm;
+    
     const str = cookieJar._jar.store.idx['stars.bilkent.edu.tr']['/'].PHPSESSID.toString();
 
     let m, cookie;
-
+    
     let loopBreaker = false;
     while ((m = regex.exec(str)) !== null && !loopBreaker) {
         if (m.index === regex.lastIndex) {
@@ -135,17 +136,25 @@ async function login(credentials) {
     config.srs_username = credentials.srs_username;
     config.srs_password = credentials.srs_password;
 
+
     form[formData.usernameField] = config.srs_username;
     form[formData.passwordField] = config.srs_password;
-    form[formData.hiddenField] = '';
-    for (let i = 0; i < form[formData.passwordField].length; i++) form[formData.hiddenField] += '*';
+    
+    let hiddenField = '';
+    console.log(formData)
+
+    for (let i = 0; i < config.srs_password; i++) hiddenField += '*';
+    
+    form[formData.hiddenField] = hiddenField;
     form[formData.buttonField] = '';
-
     const url = 'https://stars.bilkent.edu.tr' + formData.actionURL;
+    
     const refObj = await postLogin(cookieJar, url, form);
-
     console.log(refObj);
+    console.log("**************************");
+
     const codeData = await rec.receive(config, refObj.ref);
+    
     const codeObj = codeExtractor(codeData.text);
 
     const emailData = {};
